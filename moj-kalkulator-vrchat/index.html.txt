@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VRChat Avatar Calculator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #1a1a1a;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align to top for better scrolling on smaller screens */
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px 0; /* Add padding for overall spacing */
+            box-sizing: border-box;
+        }
+        .calc-card {
+            max-width: 1000px;
+            width: 95%;
+            margin: auto;
+            font-family: 'Montserrat', sans-serif;
+            color: #eee;
+            background: #0f0b1f; /* Darker background for the card */
+            border-radius: 12px; /* Rounded corners for the card */
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4); /* Soft shadow */
+            overflow: hidden; /* Ensures rounded corners are respected */
+        }
+        .unified {
+            width: 100%;
+            table-layout: fixed;
+            border-collapse: collapse;
+            background: #0f0b1f;
+        }
+        .unified caption {
+            font-size: 1.75rem; /* Larger caption */
+            font-weight: 700;
+            padding: 1.25rem; /* More padding */
+            color: #fff;
+            background: linear-gradient(90deg, #7f5bff, #54e4c4); /* Gradient background for caption */
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+        }
+        .unified th, .unified td {
+            padding: 1rem; /* More padding for cells */
+            border: 1px solid rgba(255, 255, 255, 0.15); /* Slightly stronger border */
+            vertical-align: top;
+            color: #eee;
+            font-size: 0.95rem; /* Slightly larger text */
+        }
+        .unified thead th {
+            background: rgba(127, 91, 255, 0.3);
+            font-weight: 700;
+            text-align: left;
+        }
+        .unified tbody tr:nth-child(even) {
+            background: rgba(127, 91, 255, 0.08); /* Lighter shade for even rows */
+        }
+        .unified td label {
+            display: flex; /* Use flex for better alignment of radio/checkbox with text */
+            align-items: center;
+            margin-bottom: 0.75rem; /* More space between labels */
+            white-space: normal; /* Allow text to wrap */
+            cursor: pointer; /* Indicate clickable */
+        }
+        .unified input[type="radio"],
+        .unified input[type="checkbox"] {
+            margin-right: 0.75rem; /* More space for input */
+            accent-color: #54e4c4;
+            transform: scale(1.2); /* Slightly larger checkboxes/radios */
+            cursor: pointer;
+        }
+        .text-input {
+            width: calc(100% - 20px); /* Adjust width for padding */
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #54e4c4;
+            background-color: #1a1a1a;
+            color: #eee;
+            border-radius: 8px; /* More rounded corners */
+            font-size: 1rem;
+            box-sizing: border-box; /* Include padding in width */
+        }
+        .qty-group {
+            display: none;
+            margin-left: 2.25rem; /* Indent quantity input */
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .qty-group label {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0; /* No extra margin for qty label */
+        }
+        .qty-group input[type="number"] {
+            width: 60px; /* Fixed width for quantity input */
+            padding: 5px;
+            margin-left: 10px;
+            border: 1px solid #54e4c4;
+            background-color: #1a1a1a;
+            color: #eee;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .total-row td {
+            background: rgba(127, 91, 255, 0.2); /* Slightly darker background for total */
+            font-weight: 700;
+            font-size: 1.1rem; /* Larger total text */
+        }
+        .surcharge-text {
+            font-size: 0.85em;
+            color: #ffcc00; /* Yellowish color for surcharge */
+            margin-left: 8px; /* More space */
+        }
+        .calc-actions {
+            margin-top: 1.5rem; /* More space above buttons */
+            padding: 0 1rem 1.5rem; /* Padding for the action section */
+            text-align: center;
+        }
+        .calc-actions button {
+            background-color: #54e4c4;
+            color: #0f0b1f;
+            padding: 12px 25px; /* Larger button */
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1rem; /* Larger font */
+            font-weight: 700;
+            transition: background-color 0.3s ease, transform 0.2s ease; /* Add transform for hover effect */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Button shadow */
+        }
+        .calc-actions button:hover {
+            background-color: #40c2a7;
+            transform: translateY(-2px); /* Slight lift on hover */
+        }
+        .calc-actions textarea {
+            width: calc(100% - 20px); /* Adjust width for padding */
+            padding: 15px; /* More padding */
+            margin-top: 1.5rem; /* More space */
+            border: 1px solid #54e4c4;
+            background-color: #1a1a1a;
+            color: #eee;
+            border-radius: 8px;
+            resize: vertical;
+            font-family: 'Fira Code', monospace; /* Monospace font for output */
+            min-height: 150px; /* Minimum height for textarea */
+            box-sizing: border-box;
+            line-height: 1.6; /* Better readability */
+        }
+
+        /* Description list styling */
+        .unified td ul {
+            list-style: none; /* Remove default bullet points */
+            padding: 0;
+            margin: 0;
+        }
+        .unified td ul li {
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
+        }
+        .unified td ul li:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .unified caption {
+                font-size: 1.5rem;
+                padding: 1rem;
+            }
+            .unified th, .unified td {
+                padding: 0.75rem;
+                font-size: 0.9rem;
+            }
+            .unified td label {
+                margin-bottom: 0.6rem;
+            }
+            .qty-group {
+                margin-left: 1.8rem;
+            }
+            .calc-actions button {
+                padding: 10px 20px;
+                font-size: 1rem;
+            }
+            .calc-actions textarea {
+                min-height: 120px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .unified caption {
+                font-size: 1.25rem;
+                padding: 0.8rem;
+            }
+            .unified th, .unified td {
+                display: block; /* Stack cells on very small screens */
+                width: 100%;
+                box-sizing: border-box;
+            }
+            .unified thead {
+                display: none; /* Hide table header on small screens */
+            }
+            .unified tbody tr {
+                margin-bottom: 1rem;
+                display: block;
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                border-radius: 8px;
+                padding: 1rem;
+            }
+            .unified tbody tr:nth-child(even) {
+                background: #0f0b1f; /* Reset background for stacked rows */
+            }
+            .unified tbody tr td:first-child {
+                font-weight: 700;
+                background: rgba(127, 91, 255, 0.1);
+                padding-bottom: 0.5rem;
+                border-bottom: none;
+                border-top-left-radius: 8px;
+                border-top-right-radius: 8px;
+            }
+            .unified tbody tr td:not(:first-child) {
+                border-top: none;
+            }
+            .unified tbody tr td:last-child {
+                border-bottom-left-radius: 8px;
+                border-bottom-right-radius: 8px;
+            }
+            .qty-group {
+                margin-left: 0; /* Remove indent on very small screens */
+            }
+            .unified td ul {
+                padding-left: 15px; /* Add some padding for list items */
+                list-style: disc; /* Bring back disc for descriptions */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="calc-card">
+        <table class="unified calc-table">
+            <caption>Configure Your VRChat Avatar</caption>
+            <colgroup>
+                <col style="width:24%">
+                <col style="width:36%">
+                <col style="width:40%">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>Option</th>
+                    <th>Your Choice</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Name Input -->
+                <tr>
+                    <td>Name</td>
+                    <td>
+                        <input type="text" id="userName" placeholder="Enter your name" class="text-input">
+                    </td>
+                    <td>Enter your name or project name.</td>
+                </tr>
+                <!-- Speed -->
+                <tr>
+                    <td>Speed</td>
+                    <td>
+                        <label><input type="radio" name="speed" value="1" checked> Standard</label>
+                        <label><input type="radio" name="speed" value="1.5"> Express (+50%)</label>
+                    </td>
+                    <td>
+                        <ul>
+                            <li><strong>Standard</strong>: Regular turnaround, no extra fee.</li>
+                            <li><strong>Express</strong>: Priority service with a 50% surcharge.</li>
+                        </ul>
+                    </td>
+                </tr>
+                <!-- Delivery -->
+                <tr>
+                    <td>Delivery</td>
+                    <td id="delivery">3–6 months</td>
+                    <td>Estimated completion based on selected speed.</td>
+                </tr>
+                <!-- Base -->
+                <tr>
+                    <td>Base</td>
+                    <td>
+                        <label><input type="radio" name="base" value="0" data-base="0" checked> Ready‑made Base – <span class="price-text" data-base="0">€0.00</span></label>
+                        <label><input type="radio" name="base" value="200" data-base="200"> Custom Base – <span class="price-text" data-base="200">€200.00</span></label>
+                        <label><input type="radio" name="base" value="300" data-base="300"> Complex Custom Base – <span class="price-text" data-base="300">€300.00</span></label>
+                    </td>
+                    <td>
+                        <ul>
+                            <li><strong>Ready‑made Base</strong>: Use a pre‑existing avatar template.</li>
+                            <li><strong>Custom Base</strong>: Create a new model from scratch.</li>
+                            <li><strong>Complex Custom Base</strong>: Advanced modeling with detailed features.</li>
+                        </ul>
+                    </td>
+                </tr>
+                <!-- Texture -->
+                <tr>
+                    <td>Texture</td>
+                    <td>
+                        <label><input type="radio" name="texture" value="0" data-base="0"> Own – <span class="price-text" data-base="0">€0.00</span></label>
+                        <label><input type="radio" name="texture" value="50" data-base="50" checked> Custom Texture – <span class="price-text" data-base="50">€50.00</span></label>
+                        <label><input type="radio" name="texture" value="75" data-base="75"> Complex Custom Texture – <span class="price-text" data-base="75">€75.00</span></label>
+                    </td>
+                    <td>
+                        <ul>
+                            <li><strong>Own</strong>: Upload your own textures.</li>
+                            <li><strong>Custom Texture</strong>: Standard detailing.</li>
+                            <li><strong>Complex Custom Texture</strong>: High‑detail texturing.</li>
+                        </ul>
+                    </td>
+                </tr>
+                <!-- Core Services -->
+                <tr>
+                    <td>Core Services</td>
+                    <td>
+                        <label><input type="checkbox" name="item" data-base="12.5" value="12.5"> Functionality Setup – <span class="price-text" data-base="12.5">€12.50</span></label>
+                        <label><input type="checkbox" name="item" data-base="12.5" value="12.5"> Meta Quest – <span class="price-text" data-base="12.5">€12.50</span></label>
+                        <label><input type="checkbox" name="item" data-base="12.5" value="12.5"> Optimization – <span class="price-text" data-base="12.5">€12.50</span></label>
+                    </td>
+                    <td>
+                        <ul>
+                            <li><strong>Functionality Setup</strong>: Configure controls/gestures.</li>
+                            <li><strong>Meta Quest</strong>: Optimize for Meta Quest.</li>
+                            <li><strong>Optimization</strong>: Improve performance.</li>
+                        </ul>
+                    </td>
+                </tr>
+                <!-- Add‑ons -->
+                <tr>
+                    <td>Add‑ons</td>
+                    <td>
+                        <label><input type="checkbox" id="toggle-extra"> Extra Add‑ons – <span class="price-text" data-base="12.5">€12.50 each</span></label>
+                        <div id="extra-settings" class="qty-group"><label>Qty: <input type="number" id="extra_qty" value="1" min="1"></label></div>
+                        <label><input type="checkbox" id="toggle-complex"> Complex Add‑ons – <span class="price-text" data-base="25">€25.00 each</span></label>
+                        <div id="complex-settings" class="qty-group"><label>Qty: <input type="number" id="complex_qty" value="1" min="1"></label></div>
+                    </td>
+                    <td>
+                        <ul>
+                            <li><strong>Extra Add‑ons</strong>: Use pre‑made assets.</li>
+                            <li><strong>Complex Add‑ons</strong>: Custom modifications.</li>
+                        </ul>
+                    </td>
+                </tr>
+                <!-- Editing Services -->
+                <tr>
+                    <td>Editing Services</td>
+                    <td>
+                        <label><input type="checkbox" id="toggle-edit"> Edit – <span class="price-text" data-base="25">€25.00 each</span></label>
+                        <div id="edit-settings" class="qty-group"><label>Qty: <input type="number" id="edit_qty" value="1" min="1"></label></div>
+                        <label><input type="checkbox" id="toggle-complex-edit"> Complex Edit – <span class="price-text" data-base="50">€50.00 each</span></label>
+                        <div id="complex-edit-settings" class="qty-group"><label>Qty: <input type="number" id="complex_edit_qty" value="1" min="1"></label></div>
+                    </td>
+                    <td>
+                        <ul>
+                            <li><strong>Edit</strong>: Minor tweaks to existing assets.</li>
+                            <li><strong>Complex Edit</strong>: In‑depth custom changes.</li>
+                        </ul>
+                    </td>
+                </tr>
+                <!-- Minimum Fee Notice -->
+                <tr class="min-row">
+                    <td colspan="3" style="text-align:center; font-style:italic; font-size:0.9rem;">Minimum total is €25; surcharge applies if below.</td>
+                </tr>
+                <!-- Total -->
+                <tr class="total-row">
+                    <td>Total</td>
+                    <td id="sumValue">€0.00 <span id="surchargeDisplay" class="surcharge-text"></span></td>
+                    <td>Based on your selections.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="calc-actions">
+            <button id="saveToTextBtn">Save to Text</button>
+            <textarea id="outputText" rows="10" readonly placeholder="Your configuration will appear here..."></textarea>
+        </div>
+    </div>
+
+    <script>
+        (function(){
+            // Get references to HTML elements
+            const table = document.querySelector('.unified');
+            const userNameInput = document.getElementById('userName'); // Name input
+            const sumEl = document.getElementById('sumValue');
+            const surchargeDisplay = document.getElementById('surchargeDisplay'); // Surcharge display
+            const deliveryEl = document.getElementById('delivery');
+            const toggleExtra = document.getElementById('toggle-extra');
+            const toggleComplex = document.getElementById('toggle-complex');
+            const extraSettings = document.getElementById('extra-settings');
+            const complexSettings = document.getElementById('complex-settings');
+            const extraQtyInput = document.getElementById('extra_qty');
+            const complexQtyInput = document.getElementById('complex_qty');
+
+            // References for Editing Services quantity inputs
+            const toggleEdit = document.getElementById('toggle-edit');
+            const editSettings = document.getElementById('edit-settings');
+            const editQtyInput = document.getElementById('edit_qty');
+
+            const toggleComplexEdit = document.getElementById('toggle-complex-edit');
+            const complexEditSettings = document.getElementById('complex-edit-settings');
+            const complexEditQtyInput = document.getElementById('complex_edit_qty');
+
+            const saveToTextBtn = document.getElementById('saveToTextBtn'); // Save button
+            const outputTextarea = document.getElementById('outputText'); // Output textarea
+
+            // Function to update the displayed prices for each option based on speed multiplier
+            function updateDisplayedPrices(multiplier) {
+                const priceSpans = document.querySelectorAll('.price-text');
+                priceSpans.forEach(span => {
+                    const basePrice = parseFloat(span.dataset.base);
+                    const newPrice = basePrice * multiplier;
+                    span.textContent = `€${newPrice.toFixed(2)}`;
+                    // Add 'each' for add-ons and editing services
+                    if (span.closest('td').querySelector('input[type="checkbox"]') && !span.closest('td').querySelector('input[type="radio"]')) {
+                        if (span.closest('label').id === 'toggle-extra' || span.closest('label').id === 'toggle-complex' ||
+                            span.closest('label').id === 'toggle-edit' || span.closest('label').id === 'toggle-complex-edit') {
+                            span.textContent += ' each';
+                        }
+                    }
+                });
+            }
+
+            // Function to calculate the total sum
+            function calculateSum() {
+                let total = 0;
+                let speedMultiplier = 1;
+                const minTotal = 25; // Minimum fee
+                let surchargeAmount = 0; // Initialize surcharge
+
+                // Get selected speed multiplier
+                const speedRadios = document.querySelectorAll('input[name="speed"]');
+                speedRadios.forEach(radio => {
+                    if (radio.checked) {
+                        speedMultiplier = parseFloat(radio.value);
+                    }
+                });
+
+                // Update displayed prices based on the current speed multiplier
+                updateDisplayedPrices(speedMultiplier);
+
+                // Get base price
+                const baseRadios = document.querySelectorAll('input[name="base"]');
+                baseRadios.forEach(radio => {
+                    if (radio.checked) {
+                        total += parseFloat(radio.value) * speedMultiplier;
+                    }
+                });
+
+                // Get texture price
+                const textureRadios = document.querySelectorAll('input[name="texture"]');
+                textureRadios.forEach(radio => {
+                    if (radio.checked) {
+                        total += parseFloat(radio.value) * speedMultiplier;
+                    }
+                });
+
+                // Get core services (checkboxes)
+                const itemCheckboxes = document.querySelectorAll('input[name="item"]');
+                itemCheckboxes.forEach(checkbox => {
+                    if (checkbox.checked) {
+                        total += parseFloat(checkbox.value) * speedMultiplier;
+                    }
+                });
+
+                // Calculate Add-ons based on quantity and checkbox state
+                if (toggleExtra.checked) {
+                    const qty = parseInt(extraQtyInput.value) || 0;
+                    total += qty * 12.5 * speedMultiplier;
+                }
+                if (toggleComplex.checked) {
+                    const qty = parseInt(complexQtyInput.value) || 0;
+                    total += qty * 25 * speedMultiplier;
+                }
+
+                // Calculate Editing Services cost (now with quantities)
+                if (toggleEdit.checked) {
+                    const qty = parseInt(editQtyInput.value) || 0;
+                    total += qty * 25 * speedMultiplier;
+                }
+                if (toggleComplexEdit.checked) {
+                    const qty = parseInt(complexEditQtyInput.value) || 0;
+                    total += qty * 50 * speedMultiplier;
+                }
+
+                // Apply minimum fee and calculate surcharge
+                if (total < minTotal) { // If total is less than minTotal (including 0)
+                    if (total === 0) { // If nothing is selected, surcharge is the full minTotal
+                        surchargeAmount = minTotal;
+                    } else { // If something is selected but less than minTotal
+                        surchargeAmount = minTotal - total;
+                    }
+                    total = minTotal; // Set total to minTotal
+                } else { // If total is already >= minTotal
+                    surchargeAmount = 0;
+                }
+
+                // Update the displayed sum and surcharge
+                sumEl.textContent = `€${total.toFixed(2)}`;
+                if (surchargeAmount > 0) {
+                    surchargeDisplay.textContent = ` (surcharge: €${surchargeAmount.toFixed(2)} to min. €${minTotal.toFixed(2)})`;
+                } else {
+                    surchargeDisplay.textContent = '';
+                }
+            }
+
+            // Function to update delivery time based on speed selection
+            function updateDelivery() {
+                const speedRadios = document.querySelectorAll('input[name="speed"]');
+                let selectedSpeed = 'Standard';
+                speedRadios.forEach(radio => {
+                    if (radio.checked) {
+                        if (radio.value === '1.5') {
+                            selectedSpeed = 'Express';
+                        } else {
+                            selectedSpeed = 'Standard';
+                        }
+                    }
+                });
+
+                if (selectedSpeed === 'Standard') {
+                    deliveryEl.textContent = '3–6 months';
+                } else {
+                    deliveryEl.textContent = 'up to 1 month';
+                }
+            }
+
+            // Function to gather all selections and format them into text
+            function saveToText() {
+                let output = `VRChat Avatar Configuration\n\n`;
+                output += `Name/Project Name: ${userNameInput.value || 'None'}\n\n`;
+
+                // Get Speed
+                const speedRadios = document.querySelectorAll('input[name="speed"]');
+                let selectedSpeedText = 'Standard';
+                let speedMultiplier = 1;
+                speedRadios.forEach(radio => {
+                    if (radio.checked) {
+                        // Using .labels[0].textContent for more robust text extraction
+                        selectedSpeedText = radio.labels[0].textContent.trim();
+                        speedMultiplier = parseFloat(radio.value);
+                    }
+                });
+                output += `Speed: ${selectedSpeedText}\n`;
+                output += `Delivery: ${deliveryEl.textContent}\n\n`;
+
+                // Get Base
+                const baseRadios = document.querySelectorAll('input[name="base"]');
+                baseRadios.forEach(radio => {
+                    if (radio.checked) {
+                        // Using .labels[0].textContent for more robust text extraction
+                        output += `Base: ${radio.labels[0].textContent.replace(/–.*/, '').trim()} (${(parseFloat(radio.value) * speedMultiplier).toFixed(2)}€)\n`;
+                    }
+                });
+
+                // Get Texture
+                const textureRadios = document.querySelectorAll('input[name="texture"]');
+                textureRadios.forEach(radio => {
+                    if (radio.checked) {
+                        // Using .labels[0].textContent for more robust text extraction
+                        output += `Texture: ${radio.labels[0].textContent.replace(/–.*/, '').trim()} (${(parseFloat(radio.value) * speedMultiplier).toFixed(2)}€)\n`;
+                    }
+                });
+
+                // Get Core Services
+                const itemCheckboxes = document.querySelectorAll('input[name="item"]');
+                let coreServices = [];
+                itemCheckboxes.forEach(checkbox => {
+                    if (checkbox.checked) {
+                        // Using .labels[0].textContent for more robust text extraction
+                        coreServices.push(`${checkbox.labels[0].textContent.replace(/–.*/, '').trim()} (${(parseFloat(checkbox.value) * speedMultiplier).toFixed(2)}€)`);
+                    }
+                });
+                output += `Core Services: ${coreServices.length > 0 ? coreServices.join(', ') : 'None'}\n`;
+
+                // Get Add-ons
+                let addOns = [];
+                if (toggleExtra.checked) {
+                    const qty = parseInt(extraQtyInput.value) || 0;
+                    if (qty > 0) {
+                        // Using .labels[0].textContent for more robust text extraction
+                        const labelText = toggleExtra.labels[0].textContent.replace(/–.*/, '').trim();
+                        addOns.push(`${labelText} (x${qty}) (${(qty * 12.5 * speedMultiplier).toFixed(2)}€)`);
+                    }
+                }
+                if (toggleComplex.checked) {
+                    const qty = parseInt(complexQtyInput.value) || 0;
+                    if (qty > 0) {
+                        // Using .labels[0].textContent for more robust text extraction
+                        const labelText = toggleComplex.labels[0].textContent.replace(/–.*/, '').trim();
+                        addOns.push(`${labelText} (x${qty}) (${(qty * 25 * speedMultiplier).toFixed(2)}€)`);
+                    }
+                }
+                output += `Add-ons: ${addOns.length > 0 ? addOns.join(', ') : 'None'}\n`;
+
+                // Get Editing Services
+                let editingServices = [];
+                if (toggleEdit.checked) {
+                    const qty = parseInt(editQtyInput.value) || 0;
+                    if (qty > 0) {
+                        // Using .labels[0].textContent for more robust text extraction
+                        const labelText = toggleEdit.labels[0].textContent.replace(/–.*/, '').trim();
+                        editingServices.push(`${labelText} (x${qty}) (${(qty * 25 * speedMultiplier).toFixed(2)}€)`);
+                    }
+                }
+                if (toggleComplexEdit.checked) {
+                    const qty = parseInt(complexEditQtyInput.value) || 0;
+                    if (qty > 0) {
+                        // Using .labels[0].textContent for more robust text extraction
+                        const labelText = toggleComplexEdit.labels[0].textContent.replace(/–.*/, '').trim();
+                        editingServices.push(`${labelText} (x${qty}) (${(qty * 50 * speedMultiplier).toFixed(2)}€)`);
+                    }
+                }
+                output += `Editing Services: ${editingServices.length > 0 ? editingServices.join(', ') : 'None'}\n\n`;
+
+                // Final Total
+                const currentTotalText = sumEl.textContent;
+                output += `Total: ${currentTotalText}\n`;
+
+                outputTextarea.value = output;
+            }
+
+            // Event Listeners
+            // Listen for changes on the entire table to recalculate sum
+            table.addEventListener('change', (event) => {
+                const target = event.target;
+                // Recalculate sum for all relevant input changes
+                if (target.matches('input[type="radio"]') || target.matches('input[type="checkbox"]') || target.matches('input[type="number"]')) {
+                    calculateSum();
+                }
+                // Update delivery only when speed radio changes
+                if (target.name === 'speed') {
+                    updateDelivery();
+                }
+            });
+
+            // Toggle quantity inputs visibility for Add-ons
+            toggleExtra.addEventListener('change', () => {
+                extraSettings.style.display = toggleExtra.checked ? 'block' : 'none';
+                if (!toggleExtra.checked) {
+                    extraQtyInput.value = 1; // Reset quantity if unchecked
+                }
+                calculateSum();
+            });
+
+            toggleComplex.addEventListener('change', () => {
+                complexSettings.style.display = toggleComplex.checked ? 'block' : 'none';
+                if (!toggleComplex.checked) {
+                    complexQtyInput.value = 1; // Reset quantity if unchecked
+                }
+                calculateSum();
+            });
+
+            // Toggle quantity inputs visibility for Editing Services
+            toggleEdit.addEventListener('change', () => {
+                editSettings.style.display = toggleEdit.checked ? 'block' : 'none';
+                if (!toggleEdit.checked) {
+                    editQtyInput.value = 1; // Reset quantity if unchecked
+                }
+                calculateSum();
+            });
+
+            toggleComplexEdit.addEventListener('change', () => {
+                complexEditSettings.style.display = toggleComplexEdit.checked ? 'block' : 'none';
+                if (!toggleComplexEdit.checked) {
+                    complexEditQtyInput.value = 1; // Reset quantity if unchecked
+                }
+                calculateSum();
+            });
+
+            // Initial calculations and updates on page load
+            document.addEventListener('DOMContentLoaded', () => {
+                calculateSum();
+                updateDelivery();
+                // Ensure initial state of quantity groups is correct
+                extraSettings.style.display = toggleExtra.checked ? 'block' : 'none';
+                complexSettings.style.display = toggleComplex.checked ? 'block' : 'none';
+                editSettings.style.display = toggleEdit.checked ? 'block' : 'none';
+                complexEditSettings.style.display = toggleComplexEdit.checked ? 'block' : 'none';
+            });
+
+            // Save to Text button click listener
+            saveToTextBtn.addEventListener('click', saveToText);
+
+        })();
+    </script>
+</body>
+</html>
