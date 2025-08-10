@@ -1,482 +1,606 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>VRChat Avatar Calculator</title>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
-  <style>
-    :root{
-      --bg:#0f0b1f;
-      --ink:#e8e8f2;
-      --muted:rgba(255,255,255,.75);
-      --accent:#54e4c4;
-      --accent2:#7f5bff;
-      --radius:12px;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VRChat Avatar Calculator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root{
+            --bg:#0f0b1f;
+            --accent:#54e4c4;
+            --violet:#7f5bff;
+            --text:#eee;
+            --muted:rgba(255,255,255,.15);
+        }
+        body {
+            background-color: #1a1a1a;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px 0;
+            box-sizing: border-box;
+            color: var(--text);
+            font-family: 'Montserrat', sans-serif;
+        }
+        .calc-card {
+            max-width: 1000px;
+            width: 95%;
+            margin: auto;
+            background: var(--bg);
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,.4);
+            overflow: hidden;
+        }
 
-    /* Page */
-    body{
-      background:#1a1a1a;
-      display:flex;
-      justify-content:center;
-      align-items:flex-start;
-      min-height:100vh;
-      margin:0;
-      padding:20px 0;
-      font-family:'Montserrat',sans-serif;
-      color:var(--ink);
-    }
+        /* —— TABLE WRAPPER with horizontal scroll —— */
+        .table-scroll{
+            position: relative;
+            overflow-x: auto;              /* enables horizontal scroll on small screens */
+            -webkit-overflow-scrolling: touch;
+        }
+        /* show a subtle scrollbar area on platforms that hide it */
+        .table-scroll::-webkit-scrollbar{height:10px}
+        .table-scroll::-webkit-scrollbar-track{background:rgba(255,255,255,.06); border-radius:999px}
+        .table-scroll::-webkit-scrollbar-thumb{background:rgba(127,91,255,.45); border-radius:999px}
 
-    /* Card */
-    .calc-card{
-      max-width:1000px;
-      width:95%;
-      margin:auto;
-      background:var(--bg);
-      border-radius:var(--radius);
-      overflow:hidden;
-      box-shadow:0 8px 16px rgba(0,0,0,.4);
-    }
+        /* keep table layout, and force natural width so it can overflow on mobile */
+        .unified {
+            width: 100%;
+            min-width: 900px;              /* IMPORTANT: prevents stacking; creates overflow when viewport < 900px */
+            table-layout: fixed;
+            border-collapse: collapse;
+            background: var(--bg);
+        }
+        .unified caption {
+            font-size: 1.75rem;
+            font-weight: 700;
+            padding: 1.25rem;
+            color: #fff;
+            background: linear-gradient(90deg, #7f5bff, #54e4c4);
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+        }
+        .unified th, .unified td {
+            padding: 1rem;
+            border: 1px solid var(--muted);
+            vertical-align: top;
+            color: var(--text);
+            font-size: 0.95rem;
+            background: transparent;
+        }
+        .unified thead th {
+            background: rgba(127, 91, 255, 0.3);
+            font-weight: 700;
+            text-align: left;
+        }
+        .unified tbody tr:nth-child(even) {
+            background: rgba(127, 91, 255, 0.08);
+        }
+        .unified td label {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            white-space: normal;
+            cursor: pointer;
+        }
+        .unified input[type="radio"],
+        .unified input[type="checkbox"] {
+            margin-right: 0.75rem;
+            accent-color: var(--accent);
+            transform: scale(1.2);
+            cursor: pointer;
+        }
+        .text-input {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid var(--accent);
+            background-color: #1a1a1a;
+            color: var(--text);
+            border-radius: 8px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+        .qty-group {
+            display: none;
+            margin-left: 2.25rem;
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .qty-group label { display:flex; align-items:center; margin-bottom:0; }
+        .qty-group input[type="number"] {
+            width: 60px;
+            padding: 5px;
+            margin-left: 10px;
+            border: 1px solid var(--accent);
+            background-color: #1a1a1a;
+            color: var(--text);
+            border-radius: 4px;
+            text-align: center;
+        }
+        .total-row td {
+            background: rgba(127, 91, 255, 0.2);
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        .surcharge-text {
+            font-size: 0.85em;
+            color: #ffcc00;
+            margin-left: 8px;
+        }
+        .calc-actions {
+            margin-top: 1.5rem;
+            padding: 0 1rem 1.5rem;
+            text-align: center;
+        }
+        .calc-actions button {
+            background-color: var(--accent);
+            color: #0f0b1f;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 700;
+            transition: background-color .3s ease, transform .2s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,.2);
+        }
+        .calc-actions button:hover { background-color:#40c2a7; transform: translateY(-2px); }
+        .calc-actions textarea {
+            width: calc(100% - 20px);
+            padding: 15px;
+            margin-top: 1.5rem;
+            border: 1px solid var(--accent);
+            background-color: #1a1a1a;
+            color: var(--text);
+            border-radius: 8px;
+            resize: vertical;
+            font-family: 'Fira Code', monospace;
+            min-height: 150px;
+            box-sizing: border-box;
+            line-height: 1.6;
+        }
 
-    /* Table (desktop) */
-    .unified{
-      width:100%;
-      table-layout:fixed;
-      border-collapse:collapse;
-      background:var(--bg);
-    }
-    .unified caption{
-      font-size:1.75rem;
-      font-weight:700;
-      padding:1.25rem;
-      color:#fff;
-      background:linear-gradient(90deg, var(--accent2), var(--accent));
-    }
-    .unified th,.unified td{
-      padding:1rem;
-      border:1px solid rgba(255,255,255,.15);
-      vertical-align:top;
-      color:#eee;
-      font-size:.95rem;
-    }
-    .unified thead th{
-      background:rgba(127,91,255,.3);
-      font-weight:700;
-      text-align:left;
-    }
-    .unified tbody tr:nth-child(even){
-      background:rgba(127,91,255,.08);
-    }
+        /* description list */
+        .unified td ul { list-style:none; padding:0; margin:0; }
+        .unified td ul li { margin-bottom:.5rem; line-height:1.4; }
+        .unified td ul li:last-child { margin-bottom:0; }
 
-    /* Inputs & labels */
-    .unified td label{
-      display:flex;
-      align-items:center;
-      gap:.6rem;
-      margin-bottom:.5rem;
-      cursor:pointer;
-      line-height:1.35;
-    }
-    .unified input[type="radio"],
-    .unified input[type="checkbox"]{
-      accent-color:var(--accent);
-      transform:scale(1.15);
-      cursor:pointer;
-    }
-    .text-input{
-      width:100%;
-      padding:10px;
-      border:1px solid var(--accent);
-      background:#1a1a1a;
-      color:#eee;
-      border-radius:8px;
-      font-size:1rem;
-      box-sizing:border-box;
-    }
+        /* —— SCROLL HINT PILL —— */
+        .scroll-hint{
+            position: absolute;
+            right: .75rem;
+            bottom: .75rem;
+            background: rgba(15,11,31,.85);
+            color: #e8e8f2;
+            padding: .45rem .75rem;
+            border: 1px solid rgba(127,91,255,.35);
+            border-radius: 999px;
+            backdrop-filter: blur(4px);
+            box-shadow: 0 0 20px rgba(127,91,255,.35);
+            font-size:.9rem;
+            user-select: none;
+            pointer-events: none;
+            opacity: 1;
+            transition: opacity .3s ease;
+        }
+        .scroll-hint.hidden{ opacity:0; display:none; }
 
-    /* Qty groups */
-    .qty-group{display:none; margin:.35rem 0 .25rem 2rem;}
-    .qty-group label{margin:0}
-    .qty-group input[type="number"]{
-      width:64px; padding:6px; text-align:center;
-      border:1px solid var(--accent); border-radius:6px;
-      background:#1a1a1a; color:#eee;
-    }
+        /* —— SLIDER (range) under the table —— */
+        .scrollbar-wrap{
+            display:none;                 /* becomes flex only if overflow exists */
+            gap:.75rem;
+            align-items:center;
+            padding: .75rem 1rem 1rem;
+            background: var(--bg);
+            border-top: 1px solid var(--muted);
+        }
+        .scrollbar-wrap.show{ display:flex; }
+        .scrollbar-label{ font-size:.9rem; opacity:.8; white-space:nowrap; }
+        .scrollbar{
+            appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 999px;
+            background: rgba(127,91,255,.25);
+            outline: none;
+        }
+        .scrollbar::-webkit-slider-thumb{
+            appearance: none;
+            width: 18px; height: 18px; border-radius: 50%;
+            background: linear-gradient(135deg,#7f5fff,#54e4c4);
+            box-shadow: 0 0 16px rgba(127,91,255,.6);
+            cursor: pointer;
+            border: none;
+        }
+        .scrollbar::-moz-range-thumb{
+            width: 18px; height: 18px; border-radius: 50%;
+            background: linear-gradient(135deg,#7f5fff,#54e4c4);
+            box-shadow: 0 0 16px rgba(127,91,255,.6);
+            cursor: pointer; border: none;
+        }
 
-    .total-row td{
-      background:rgba(127,91,255,.2);
-      font-weight:700; font-size:1.1rem;
-    }
-    .surcharge-text{ font-size:.9em; color:#ffcc00; }
+        /* —— IMPORTANT: remove old mobile-stacking rules —— */
+        /* (Brak media-queries zmieniających <table> w „kafle”. Układ zostaje tabelą na każdym ekranie.) */
 
-    /* Actions */
-    .calc-actions{ padding:0 1rem 1.25rem; text-align:center; }
-    .calc-actions button{
-      background:var(--accent); color:#0f0b1f;
-      padding:12px 24px; border:0; border-radius:8px;
-      font-weight:700; font-size:1.05rem; cursor:pointer;
-      transition:transform .2s ease, filter .2s ease;
-      box-shadow:0 4px 8px rgba(0,0,0,.25);
-    }
-    .calc-actions button:hover{ transform:translateY(-2px); filter:saturate(1.05); }
-    .calc-actions textarea{
-      width:100%; min-height:150px; margin-top:1rem;
-      border:1px solid var(--accent); border-radius:8px;
-      background:#1a1a1a; color:#eee; resize:vertical;
-      font-family:'Fira Code',monospace; line-height:1.55; box-sizing:border-box; padding:14px;
-    }
-
-    /* Description ULs */
-    .unified td ul{ list-style:none; padding:0; margin:0; }
-    .unified td ul li{ margin-bottom:.45rem; line-height:1.4; }
-    .unified td ul li:last-child{ margin-bottom:0; }
-
-    /* ---------- RESPONSIVE ---------- */
-
-    /* Tablet helper: pack choices into two columns for mid widths */
-    @media (max-width:900px){
-      .unified caption{ font-size:1.5rem; padding:1rem; }
-      .unified th,.unified td{ padding:.85rem; font-size:.92rem; }
-      /* turn each row into a card */
-      .unified thead{ display:none; }
-      .unified, .unified tbody, .unified tr, .unified td{ display:block; width:100%; }
-      .unified tbody tr{
-        background:#0f0b1f;
-        border:1px solid rgba(255,255,255,.15);
-        border-radius:10px;
-        padding:.85rem;
-        margin:0 0 .9rem 0;
-      }
-      .unified tbody tr:nth-child(even){ background:#0f0b1f; }
-      .unified tbody tr td{ border:0; padding:.35rem 0; }
-      /* first cell = row title */
-      .unified tbody tr td:first-child{
-        font-weight:700; background:rgba(127,91,255,.12);
-        padding:.55rem .7rem; border-radius:8px; margin-bottom:.5rem;
-      }
-      /* second cell (Your Choice) — tidy grid for radios/checkboxes */
-      .unified tbody tr td:nth-child(2){
-        display:grid; gap:.4rem;
-        grid-template-columns:repeat(2,minmax(0,1fr));
-      }
-      /* rows with a single input (like Name) fall back to one col */
-      .unified tbody tr td:nth-child(2):has(input[type="text"]){
-        display:block;
-      }
-      /* Description back to bullets for readability */
-      .unified tbody tr td:last-child ul{
-        list-style:disc; padding-left:1.1rem;
-      }
-    }
-
-    @media (max-width:600px){
-      .unified tbody tr td:nth-child(2){
-        grid-template-columns:1fr; /* one column on small phones */
-      }
-      .unified caption{ font-size:1.3rem; }
-      .calc-actions textarea{ min-height:120px; }
-    }
-  </style>
+        /* small polish tweaks */
+        @media (max-width: 768px){
+            .unified caption { font-size:1.5rem; padding:1rem; }
+            .unified th, .unified td { padding:.75rem; font-size:.9rem; }
+        }
+    </style>
 </head>
 <body>
-  <div class="calc-card">
-    <table class="unified calc-table">
-      <caption>Configure Your VRChat Avatar</caption>
-      <colgroup>
-        <col style="width:24%">
-        <col style="width:36%">
-        <col style="width:40%">
-      </colgroup>
-      <thead>
-        <tr>
-          <th>Option</th>
-          <th>Your Choice</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- Name -->
-        <tr>
-          <td>Name</td>
-          <td><input type="text" id="userName" placeholder="Enter your name" class="text-input"></td>
-          <td>Enter your name or project name.</td>
-        </tr>
+    <div class="calc-card">
+        <div class="table-scroll" id="tableScroll">
+            <table class="unified calc-table" id="calcTable">
+                <caption>Configure Your VRChat Avatar</caption>
+                <colgroup>
+                    <col style="width:24%">
+                    <col style="width:36%">
+                    <col style="width:40%">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>Option</th>
+                        <th>Your Choice</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Name Input -->
+                    <tr>
+                        <td>Name</td>
+                        <td><input type="text" id="userName" placeholder="Enter your name" class="text-input"></td>
+                        <td>Enter your name or project name.</td>
+                    </tr>
+                    <!-- Speed -->
+                    <tr>
+                        <td>Speed</td>
+                        <td>
+                            <label><input type="radio" name="speed" value="1" checked> Standard</label>
+                            <label><input type="radio" name="speed" value="1.5"> Express (+50%)</label>
+                        </td>
+                        <td>
+                            <ul>
+                                <li><strong>Standard</strong>: Regular turnaround, no extra fee.</li>
+                                <li><strong>Express</strong>: Priority service with a 50% surcharge.</li>
+                            </ul>
+                        </td>
+                    </tr>
+                    <!-- Delivery -->
+                    <tr>
+                        <td>Delivery</td>
+                        <td id="delivery">3–6 months</td>
+                        <td>Estimated completion based on selected speed.</td>
+                    </tr>
+                    <!-- Base -->
+                    <tr>
+                        <td>Base</td>
+                        <td>
+                            <label><input type="radio" name="base" value="0" data-base="0" checked> Ready‑made Base – <span class="price-text" data-base="0">€0.00</span></label>
+                            <label><input type="radio" name="base" value="200" data-base="200"> Custom Base – <span class="price-text" data-base="200">€200.00</span></label>
+                            <label><input type="radio" name="base" value="300" data-base="300"> Complex Custom Base – <span class="price-text" data-base="300">€300.00</span></label>
+                        </td>
+                        <td>
+                            <ul>
+                                <li><strong>Ready‑made Base</strong>: Use a pre‑existing avatar template.</li>
+                                <li><strong>Custom Base</strong>: Create a new model from scratch.</li>
+                                <li><strong>Complex Custom Base</strong>: Advanced modeling with detailed features.</li>
+                            </ul>
+                        </td>
+                    </tr>
+                    <!-- Texture -->
+                    <tr>
+                        <td>Texture</td>
+                        <td>
+                            <label><input type="radio" name="texture" value="0" data-base="0"> Own – <span class="price-text" data-base="0">€0.00</span></label>
+                            <label><input type="radio" name="texture" value="50" data-base="50" checked> Custom Texture – <span class="price-text" data-base="50">€50.00</span></label>
+                            <label><input type="radio" name="texture" value="75" data-base="75"> Complex Custom Texture – <span class="price-text" data-base="75">€75.00</span></label>
+                        </td>
+                        <td>
+                            <ul>
+                                <li><strong>Own</strong>: Upload your own textures.</li>
+                                <li><strong>Custom Texture</strong>: Standard detailing.</li>
+                                <li><strong>Complex Custom Texture</strong>: High‑detail texturing.</li>
+                            </ul>
+                        </td>
+                    </tr>
+                    <!-- Core Services -->
+                    <tr>
+                        <td>Core Services</td>
+                        <td>
+                            <label><input type="checkbox" name="item" data-base="12.5" value="12.5"> Functionality Setup – <span class="price-text" data-base="12.5">€12.50</span></label>
+                            <label><input type="checkbox" name="item" data-base="12.5" value="12.5"> Meta Quest – <span class="price-text" data-base="12.5">€12.50</span></label>
+                            <label><input type="checkbox" name="item" data-base="12.5" value="12.5"> Optimization – <span class="price-text" data-base="12.5">€12.50</span></label>
+                        </td>
+                        <td>
+                            <ul>
+                                <li><strong>Functionality Setup</strong>: Configure controls/gestures.</li>
+                                <li><strong>Meta Quest</strong>: Optimize for Meta Quest.</li>
+                                <li><strong>Optimization</strong>: Improve performance.</li>
+                            </ul>
+                        </td>
+                    </tr>
+                    <!-- Add‑ons -->
+                    <tr>
+                        <td>Add‑ons</td>
+                        <td>
+                            <label><input type="checkbox" id="toggle-extra"> Extra Add‑ons – <span class="price-text" data-base="12.5">€12.50 each</span></label>
+                            <div id="extra-settings" class="qty-group"><label>Qty: <input type="number" id="extra_qty" value="1" min="1"></label></div>
+                            <label><input type="checkbox" id="toggle-complex"> Complex Add‑ons – <span class="price-text" data-base="25">€25.00 each</span></label>
+                            <div id="complex-settings" class="qty-group"><label>Qty: <input type="number" id="complex_qty" value="1" min="1"></label></div>
+                        </td>
+                        <td>
+                            <ul>
+                                <li><strong>Extra Add‑ons</strong>: Use pre‑made assets.</li>
+                                <li><strong>Complex Add‑ons</strong>: Custom modifications.</li>
+                            </ul>
+                        </td>
+                    </tr>
+                    <!-- Editing Services -->
+                    <tr>
+                        <td>Editing Services</td>
+                        <td>
+                            <label><input type="checkbox" id="toggle-edit"> Edit – <span class="price-text" data-base="25">€25.00 each</span></label>
+                            <div id="edit-settings" class="qty-group"><label>Qty: <input type="number" id="edit_qty" value="1" min="1"></label></div>
+                            <label><input type="checkbox" id="toggle-complex-edit"> Complex Edit – <span class="price-text" data-base="50">€50.00 each</span></label>
+                            <div id="complex-edit-settings" class="qty-group"><label>Qty: <input type="number" id="complex_edit_qty" value="1" min="1"></label></div>
+                        </td>
+                        <td>
+                            <ul>
+                                <li><strong>Edit</strong>: Minor tweaks to existing assets.</li>
+                                <li><strong>Complex Edit</strong>: In‑depth custom changes.</li>
+                            </ul>
+                        </td>
+                    </tr>
+                    <!-- Minimum Fee Notice -->
+                    <tr class="min-row">
+                        <td colspan="3" style="text-align:center; font-style:italic; font-size:0.9rem;">Minimum total is €25; surcharge applies if below.</td>
+                    </tr>
+                    <!-- Total -->
+                    <tr class="total-row">
+                        <td>Total</td>
+                        <td id="sumValue">€0.00 <span id="surchargeDisplay" class="surcharge-text"></span></td>
+                        <td>Based on your selections.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <!-- Swipe hint (auto-hides after first scroll and never returns) -->
+            <div id="scrollHint" class="scroll-hint">Swipe →</div>
+        </div>
 
-        <!-- Speed -->
-        <tr>
-          <td>Speed</td>
-          <td>
-            <label><input type="radio" name="speed" value="1" checked> Standard</label>
-            <label><input type="radio" name="speed" value="1.5"> Express (+50%)</label>
-          </td>
-          <td>
-            <ul>
-              <li><strong>Standard</strong>: Regular turnaround, no extra fee.</li>
-              <li><strong>Express</strong>: Priority service with a 50% surcharge.</li>
-            </ul>
-          </td>
-        </tr>
+        <!-- Slider (appears only when the table actually overflows) -->
+        <div class="scrollbar-wrap" id="scrollbarWrap" aria-hidden="true">
+            <div class="scrollbar-label">Slide</div>
+            <input type="range" class="scrollbar" id="scrollSlider" min="0" value="0" />
+        </div>
 
-        <!-- Delivery -->
-        <tr>
-          <td>Delivery</td>
-          <td id="delivery">3–6 months</td>
-          <td>Estimated completion based on selected speed.</td>
-        </tr>
-
-        <!-- Base -->
-        <tr>
-          <td>Base</td>
-          <td>
-            <label><input type="radio" name="base" value="0" data-base="0" checked> Ready‑made Base – <span class="price-text" data-base="0">€0.00</span></label>
-            <label><input type="radio" name="base" value="200" data-base="200"> Custom Base – <span class="price-text" data-base="200">€200.00</span></label>
-            <label><input type="radio" name="base" value="300" data-base="300"> Complex Custom Base – <span class="price-text" data-base="300">€300.00</span></label>
-          </td>
-          <td>
-            <ul>
-              <li><strong>Ready‑made Base</strong>: Use a pre‑existing avatar template.</li>
-              <li><strong>Custom Base</strong>: Create a new model from scratch.</li>
-              <li><strong>Complex Custom Base</strong>: Advanced modeling with detailed features.</li>
-            </ul>
-          </td>
-        </tr>
-
-        <!-- Texture -->
-        <tr>
-          <td>Texture</td>
-          <td>
-            <label><input type="radio" name="texture" value="0" data-base="0"> Own – <span class="price-text" data-base="0">€0.00</span></label>
-            <label><input type="radio" name="texture" value="50" data-base="50" checked> Custom Texture – <span class="price-text" data-base="50">€50.00</span></label>
-            <label><input type="radio" name="texture" value="75" data-base="75"> Complex Custom Texture – <span class="price-text" data-base="75">€75.00</span></label>
-          </td>
-          <td>
-            <ul>
-              <li><strong>Own</strong>: Upload your own textures.</li>
-              <li><strong>Custom Texture</strong>: Standard detailing.</li>
-              <li><strong>Complex Custom Texture</strong>: High‑detail texturing.</li>
-            </ul>
-          </td>
-        </tr>
-
-        <!-- Core Services -->
-        <tr>
-          <td>Core Services</td>
-          <td>
-            <label><input type="checkbox" name="item" data-base="12.5" value="12.5"> Functionality Setup – <span class="price-text" data-base="12.5">€12.50</span></label>
-            <label><input type="checkbox" name="item" data-base="12.5" value="12.5"> Meta Quest – <span class="price-text" data-base="12.5">€12.50</span></label>
-            <label><input type="checkbox" name="item" data-base="12.5" value="12.5"> Optimization – <span class="price-text" data-base="12.5">€12.50</span></label>
-          </td>
-          <td>
-            <ul>
-              <li><strong>Functionality Setup</strong>: Configure controls/gestures.</li>
-              <li><strong>Meta Quest</strong>: Optimize for Meta Quest.</li>
-              <li><strong>Optimization</strong>: Improve performance.</li>
-            </ul>
-          </td>
-        </tr>
-
-        <!-- Add‑ons -->
-        <tr>
-          <td>Add‑ons</td>
-          <td>
-            <label><input type="checkbox" id="toggle-extra"> Extra Add‑ons – <span class="price-text" data-base="12.5">€12.50 each</span></label>
-            <div id="extra-settings" class="qty-group"><label>Qty: <input type="number" id="extra_qty" value="1" min="1"></label></div>
-            <label><input type="checkbox" id="toggle-complex"> Complex Add‑ons – <span class="price-text" data-base="25">€25.00 each</span></label>
-            <div id="complex-settings" class="qty-group"><label>Qty: <input type="number" id="complex_qty" value="1" min="1"></label></div>
-          </td>
-          <td>
-            <ul>
-              <li><strong>Extra Add‑ons</strong>: Use pre‑made assets.</li>
-              <li><strong>Complex Add‑ons</strong>: Custom modifications.</li>
-            </ul>
-          </td>
-        </tr>
-
-        <!-- Editing Services -->
-        <tr>
-          <td>Editing Services</td>
-          <td>
-            <label><input type="checkbox" id="toggle-edit"> Edit – <span class="price-text" data-base="25">€25.00 each</span></label>
-            <div id="edit-settings" class="qty-group"><label>Qty: <input type="number" id="edit_qty" value="1" min="1"></label></div>
-            <label><input type="checkbox" id="toggle-complex-edit"> Complex Edit – <span class="price-text" data-base="50">€50.00 each</span></label>
-            <div id="complex-edit-settings" class="qty-group"><label>Qty: <input type="number" id="complex_edit_qty" value="1" min="1"></label></div>
-          </td>
-          <td>
-            <ul>
-              <li><strong>Edit</strong>: Minor tweaks to existing assets.</li>
-              <li><strong>Complex Edit</strong>: In‑depth custom changes.</li>
-            </ul>
-          </td>
-        </tr>
-
-        <!-- Minimum -->
-        <tr class="min-row">
-          <td colspan="3" style="text-align:center; font-style:italic; font-size:.9rem;">
-            Minimum total is €25; surcharge applies if below.
-          </td>
-        </tr>
-
-        <!-- Total -->
-        <tr class="total-row">
-          <td>Total</td>
-          <td id="sumValue">€0.00 <span id="surchargeDisplay" class="surcharge-text"></span></td>
-          <td>Based on your selections.</td>
-        </tr>
-      </tbody>
-    </table>
-
-    <div class="calc-actions">
-      <button id="saveToTextBtn">Save to Text</button>
-      <textarea id="outputText" rows="10" readonly placeholder="Your configuration will appear here..."></textarea>
+        <div class="calc-actions">
+            <button id="saveToTextBtn">Save to Text</button>
+            <textarea id="outputText" rows="10" readonly placeholder="Your configuration will appear here..."></textarea>
+        </div>
     </div>
-  </div>
 
-  <script>
-    (function(){
-      const $ = s => document.querySelector(s);
-      const $$ = s => document.querySelectorAll(s);
+    <script>
+        (function(){
+            // ======= EXISTING CALCULATOR LOGIC =======
+            const table = document.querySelector('.unified');
+            const userNameInput = document.getElementById('userName');
+            const sumEl = document.getElementById('sumValue');
+            const surchargeDisplay = document.getElementById('surchargeDisplay');
+            const deliveryEl = document.getElementById('delivery');
+            const toggleExtra = document.getElementById('toggle-extra');
+            const toggleComplex = document.getElementById('toggle-complex');
+            const extraSettings = document.getElementById('extra-settings');
+            const complexSettings = document.getElementById('complex-settings');
+            const extraQtyInput = document.getElementById('extra_qty');
+            const complexQtyInput = document.getElementById('complex_qty');
 
-      const table = $('.unified');
-      const userNameInput = $('#userName');
-      const sumEl = $('#sumValue');
-      const surchargeDisplay = $('#surchargeDisplay');
-      const deliveryEl = $('#delivery');
+            const toggleEdit = document.getElementById('toggle-edit');
+            const editSettings = document.getElementById('edit-settings');
+            const editQtyInput = document.getElementById('edit_qty');
 
-      const toggleExtra = $('#toggle-extra');
-      const toggleComplex = $('#toggle-complex');
-      const extraSettings = $('#extra-settings');
-      const complexSettings = $('#complex-settings');
-      const extraQtyInput = $('#extra_qty');
-      const complexQtyInput = $('#complex_qty');
+            const toggleComplexEdit = document.getElementById('toggle-complex-edit');
+            const complexEditSettings = document.getElementById('complex-edit-settings');
+            const complexEditQtyInput = document.getElementById('complex_edit_qty');
 
-      const toggleEdit = $('#toggle-edit');
-      const editSettings = $('#edit-settings');
-      const editQtyInput = $('#edit_qty');
+            const saveToTextBtn = document.getElementById('saveToTextBtn');
+            const outputTextarea = document.getElementById('outputText');
 
-      const toggleComplexEdit = $('#toggle-complex-edit');
-      const complexEditSettings = $('#complex-edit-settings');
-      const complexEditQtyInput = $('#complex_edit_qty');
+            function updateDisplayedPrices(multiplier) {
+                const priceSpans = document.querySelectorAll('.price-text');
+                priceSpans.forEach(span => {
+                    const basePrice = parseFloat(span.dataset.base);
+                    const newPrice = basePrice * multiplier;
+                    span.textContent = `€${newPrice.toFixed(2)}`;
+                    if (span.closest('td').querySelector('input[type="checkbox"]') && !span.closest('td').querySelector('input[type="radio"]')) {
+                        const lbl = span.closest('label');
+                        if (lbl && (lbl.id === 'toggle-extra' || lbl.id === 'toggle-complex' || lbl.id === 'toggle-edit' || lbl.id === 'toggle-complex-edit')) {
+                            span.textContent += ' each';
+                        }
+                    }
+                });
+            }
 
-      const saveToTextBtn = $('#saveToTextBtn');
-      const outputTextarea = $('#outputText');
+            function calculateSum() {
+                let total = 0;
+                let speedMultiplier = 1;
+                const minTotal = 25;
+                let surchargeAmount = 0;
 
-      function updateDisplayedPrices(mult){
-        $$('.price-text').forEach(span=>{
-          const base = parseFloat(span.dataset.base);
-          const newPrice = base * mult;
-          span.textContent = `€${newPrice.toFixed(2)}`;
-        });
-      }
+                document.querySelectorAll('input[name="speed"]').forEach(r => { if (r.checked) speedMultiplier = parseFloat(r.value); });
+                updateDisplayedPrices(speedMultiplier);
 
-      function calculateSum(){
-        let total = 0;
-        let speedMultiplier = 1;
-        const minTotal = 25;
-        let surchargeAmount = 0;
+                document.querySelectorAll('input[name="base"]').forEach(r => { if (r.checked) total += parseFloat(r.value) * speedMultiplier; });
+                document.querySelectorAll('input[name="texture"]').forEach(r => { if (r.checked) total += parseFloat(r.value) * speedMultiplier; });
 
-        $$('input[name="speed"]').forEach(r=>{ if(r.checked) speedMultiplier = parseFloat(r.value); });
-        updateDisplayedPrices(speedMultiplier);
+                document.querySelectorAll('input[name="item"]').forEach(c => { if (c.checked) total += parseFloat(c.value) * speedMultiplier; });
 
-        $$('input[name="base"]').forEach(r=>{ if(r.checked) total += parseFloat(r.value) * speedMultiplier; });
-        $$('input[name="texture"]').forEach(r=>{ if(r.checked) total += parseFloat(r.value) * speedMultiplier; });
-        $$('input[name="item"]').forEach(c=>{ if(c.checked) total += parseFloat(c.value) * speedMultiplier; });
+                if (toggleExtra.checked) total += (parseInt(extraQtyInput.value) || 0) * 12.5 * speedMultiplier;
+                if (toggleComplex.checked) total += (parseInt(complexQtyInput.value) || 0) * 25 * speedMultiplier;
+                if (toggleEdit.checked) total += (parseInt(editQtyInput.value) || 0) * 25 * speedMultiplier;
+                if (toggleComplexEdit.checked) total += (parseInt(complexEditQtyInput.value) || 0) * 50 * speedMultiplier;
 
-        if (toggleExtra.checked)  total += (parseInt(extraQtyInput.value)||0)  * 12.5 * speedMultiplier;
-        if (toggleComplex.checked) total += (parseInt(complexQtyInput.value)||0) * 25   * speedMultiplier;
-        if (toggleEdit.checked)    total += (parseInt(editQtyInput.value)||0)         * 25   * speedMultiplier;
-        if (toggleComplexEdit.checked) total += (parseInt(complexEditQtyInput.value)||0) * 50 * speedMultiplier;
+                if (total < minTotal) {
+                    surchargeAmount = (total === 0) ? minTotal : (minTotal - total);
+                    total = minTotal;
+                } else surchargeAmount = 0;
 
-        if (total < minTotal){
-          surchargeAmount = (total === 0) ? minTotal : (minTotal - total);
-          total = minTotal;
-        } else {
-          surchargeAmount = 0;
-        }
+                sumEl.textContent = `€${total.toFixed(2)}`;
+                surchargeDisplay.textContent = surchargeAmount > 0 ? ` (surcharge: €${surchargeAmount.toFixed(2)} to min. €${minTotal.toFixed(2)})` : '';
+            }
 
-        sumEl.textContent = `€${total.toFixed(2)}`;
-        surchargeDisplay.textContent = surchargeAmount > 0 ? ` (surcharge: €${surchargeAmount.toFixed(2)} to min. €${minTotal.toFixed(2)})` : '';
-      }
+            function updateDelivery() {
+                const isExpress = Array.from(document.querySelectorAll('input[name="speed"]')).some(r => r.checked && r.value === '1.5');
+                deliveryEl.textContent = isExpress ? 'up to 1 month' : '3–6 months';
+            }
 
-      function updateDelivery(){
-        let selected = 'Standard';
-        $$('input[name=\"speed\"]').forEach(r=>{ if(r.checked) selected = (r.value==='1.5' ? 'Express' : 'Standard'); });
-        deliveryEl.textContent = selected === 'Standard' ? '3–6 months' : 'up to 1 month';
-      }
+            function saveToText() {
+                let output = `VRChat Avatar Configuration\n\n`;
+                output += `Name/Project Name: ${userNameInput.value || 'None'}\n\n`;
 
-      function saveToText(){
-        let output = `VRChat Avatar Configuration\\n\\n`;
-        output += `Name/Project Name: ${userNameInput.value || 'None'}\\n\\n`;
+                let selectedSpeedText = 'Standard';
+                let speedMultiplier = 1;
+                document.querySelectorAll('input[name="speed"]').forEach(r => {
+                    if (r.checked) { selectedSpeedText = r.labels[0].textContent.trim(); speedMultiplier = parseFloat(r.value); }
+                });
+                output += `Speed: ${selectedSpeedText}\n`;
+                output += `Delivery: ${deliveryEl.textContent}\n\n`;
 
-        let selectedSpeedText = 'Standard', speedMultiplier = 1;
-        $$('input[name=\"speed\"]').forEach(r=>{ if(r.checked){ selectedSpeedText = r.labels[0].textContent.trim(); speedMultiplier = parseFloat(r.value);} });
-        output += `Speed: ${selectedSpeedText}\\n`;
-        output += `Delivery: ${deliveryEl.textContent}\\n\\n`;
+                document.querySelectorAll('input[name="base"]').forEach(r => { if (r.checked) output += `Base: ${r.labels[0].textContent.replace(/–.*/, '').trim()} (${(parseFloat(r.value) * speedMultiplier).toFixed(2)}€)\n`; });
+                document.querySelectorAll('input[name="texture"]').forEach(r => { if (r.checked) output += `Texture: ${r.labels[0].textContent.replace(/–.*/, '').trim()} (${(parseFloat(r.value) * speedMultiplier).toFixed(2)}€)\n`; });
 
-        $$('input[name=\"base\"]').forEach(r=>{ if(r.checked) output += `Base: ${r.labels[0].textContent.replace(/–.*/, '').trim()} (${(parseFloat(r.value)*speedMultiplier).toFixed(2)}€)\\n`; });
-        $$('input[name=\"texture\"]').forEach(r=>{ if(r.checked) output += `Texture: ${r.labels[0].textContent.replace(/–.*/, '').trim()} (${(parseFloat(r.value)*speedMultiplier).toFixed(2)}€)\\n`; });
+                const core = [];
+                document.querySelectorAll('input[name="item"]').forEach(c => { if (c.checked) core.push(`${c.labels[0].textContent.replace(/–.*/, '').trim()} (${(parseFloat(c.value) * speedMultiplier).toFixed(2)}€)`); });
+                output += `Core Services: ${core.length ? core.join(', ') : 'None'}\n`;
 
-        const core = [];
-        $$('input[name=\"item\"]').forEach(c=>{ if(c.checked) core.push(`${c.labels[0].textContent.replace(/–.*/, '').trim()} (${(parseFloat(c.value)*speedMultiplier).toFixed(2)}€)`); });
-        output += `Core Services: ${core.length?core.join(', '):'None'}\\n`;
+                const addOns = [];
+                if (toggleExtra.checked) { const q = parseInt(extraQtyInput.value)||0; if (q>0) addOns.push(`${toggleExtra.labels[0].textContent.replace(/–.*/, '').trim()} (x${q}) (${(q*12.5*speedMultiplier).toFixed(2)}€)`); }
+                if (toggleComplex.checked) { const q = parseInt(complexQtyInput.value)||0; if (q>0) addOns.push(`${toggleComplex.labels[0].textContent.replace(/–.*/, '').trim()} (x${q}) (${(q*25*speedMultiplier).toFixed(2)}€)`); }
+                output += `Add-ons: ${addOns.length ? addOns.join(', ') : 'None'}\n`;
 
-        const addOns=[];
-        if (toggleExtra.checked){
-          const q = parseInt(extraQtyInput.value)||0;
-          if (q>0) addOns.push(`${toggleExtra.labels[0].textContent.replace(/–.*/, '').trim()} (x${q}) (${(q*12.5*speedMultiplier).toFixed(2)}€)`);
-        }
-        if (toggleComplex.checked){
-          const q = parseInt(complexQtyInput.value)||0;
-          if (q>0) addOns.push(`${toggleComplex.labels[0].textContent.replace(/–.*/, '').trim()} (x${q}) (${(q*25*speedMultiplier).toFixed(2)}€)`);
-        }
-        output += `Add-ons: ${addOns.length?addOns.join(', '):'None'}\\n`;
+                const edits = [];
+                if (toggleEdit.checked){ const q=parseInt(editQtyInput.value)||0; if(q>0) edits.push(`${toggleEdit.labels[0].textContent.replace(/–.*/, '').trim()} (x${q}) (${(q*25*speedMultiplier).toFixed(2)}€)`); }
+                if (toggleComplexEdit.checked){ const q=parseInt(complexEditQtyInput.value)||0; if(q>0) edits.push(`${toggleComplexEdit.labels[0].textContent.replace(/–.*/, '').trim()} (x${q}) (${(q*50*speedMultiplier).toFixed(2)}€)`); }
+                output += `Editing Services: ${edits.length ? edits.join(', ') : 'None'}\n\n`;
 
-        const edits=[];
-        if (toggleEdit.checked){
-          const q = parseInt(editQtyInput.value)||0;
-          if (q>0) edits.push(`${toggleEdit.labels[0].textContent.replace(/–.*/, '').trim()} (x${q}) (${(q*25*speedMultiplier).toFixed(2)}€)`);
-        }
-        if (toggleComplexEdit.checked){
-          const q = parseInt(complexEditQtyInput.value)||0;
-          if (q>0) edits.push(`${toggleComplexEdit.labels[0].textContent.replace(/–.*/, '').trim()} (x${q}) (${(q*50*speedMultiplier).toFixed(2)}€)`);
-        }
-        output += `Editing Services: ${edits.length?edits.join(', '):'None'}\\n\\n`;
+                output += `Total: ${sumEl.textContent}\n`;
+                outputTextarea.value = output;
+            }
 
-        output += `Total: ${sumEl.textContent}\\n`;
-        $('#outputText').value = output;
-      }
+            table.addEventListener('change', (event) => {
+                const t = event.target;
+                if (t.matches('input[type="radio"],input[type="checkbox"],input[type="number"]')) calculateSum();
+                if (t.name === 'speed') updateDelivery();
+            });
 
-      table.addEventListener('change', e=>{
-        if (e.target.matches('input[type="radio"], input[type="checkbox"], input[type="number"]')){
-          calculateSum();
-          if (e.target.name==='speed') updateDelivery();
-        }
-      });
+            toggleExtra.addEventListener('change', () => {
+                extraSettings.style.display = toggleExtra.checked ? 'block' : 'none';
+                if (!toggleExtra.checked) extraQtyInput.value = 1;
+                calculateSum();
+            });
+            toggleComplex.addEventListener('change', () => {
+                complexSettings.style.display = toggleComplex.checked ? 'block' : 'none';
+                if (!toggleComplex.checked) complexQtyInput.value = 1;
+                calculateSum();
+            });
+            toggleEdit.addEventListener('change', () => {
+                editSettings.style.display = toggleEdit.checked ? 'block' : 'none';
+                if (!toggleEdit.checked) editQtyInput.value = 1;
+                calculateSum();
+            });
+            toggleComplexEdit.addEventListener('change', () => {
+                complexEditSettings.style.display = toggleComplexEdit.checked ? 'block' : 'none';
+                if (!toggleComplexEdit.checked) complexEditQtyInput.value = 1;
+                calculateSum();
+            });
 
-      // Toggle qty groups
-      const toggleQty = (toggleEl, boxEl, inputEl) => {
-        toggleEl.addEventListener('change', ()=>{
-          boxEl.style.display = toggleEl.checked ? 'block' : 'none';
-          if(!toggleEl.checked) inputEl.value = 1;
-          calculateSum();
-        });
-      };
-      toggleQty(toggleExtra, extraSettings, extraQtyInput);
-      toggleQty(toggleComplex, complexSettings, complexQtyInput);
-      toggleQty(toggleEdit, editSettings, editQtyInput);
-      toggleQty(toggleComplexEdit, complexEditSettings, complexEditQtyInput);
+            saveToTextBtn.addEventListener('click', saveToText);
 
-      document.addEventListener('DOMContentLoaded', ()=>{
-        calculateSum();
-        updateDelivery();
-        extraSettings.style.display = toggleExtra.checked ? 'block' : 'none';
-        complexSettings.style.display = toggleComplex.checked ? 'block' : 'none';
-        editSettings.style.display = toggleEdit.checked ? 'block' : 'none';
-        complexEditSettings.style.display = toggleComplexEdit.checked ? 'block' : 'none';
-      });
+            // ======= NEW: HORIZONTAL SLIDER + SWIPE HINT =======
+            const scrollWrap = document.getElementById('tableScroll');
+            const slider = document.getElementById('scrollSlider');
+            const sliderWrap = document.getElementById('scrollbarWrap');
+            const hint = document.getElementById('scrollHint');
+            const HINT_KEY = 'vrchatCalcSwipeDismissed';
 
-      $('#saveToTextBtn').addEventListener('click', saveToText);
-    })();
-  </script>
+            function hasOverflow(){
+                return scrollWrap.scrollWidth > scrollWrap.clientWidth + 2; // small tolerance
+            }
+
+            function updateSliderBounds(){
+                slider.max = Math.max(0, scrollWrap.scrollWidth - scrollWrap.clientWidth);
+                slider.value = scrollWrap.scrollLeft;
+            }
+
+            function updateHintText(){
+                const atStart = scrollWrap.scrollLeft <= 1;
+                const atEnd = scrollWrap.scrollLeft >= (scrollWrap.scrollWidth - scrollWrap.clientWidth - 1);
+                hint.textContent = atStart ? 'Swipe →' : (atEnd ? '← Swipe' : '← Swipe →');
+            }
+
+            function ensureUI(){
+                const overflow = hasOverflow();
+                sliderWrap.classList.toggle('show', overflow);
+                sliderWrap.setAttribute('aria-hidden', overflow ? 'false' : 'true');
+                if (overflow){
+                    updateSliderBounds();
+                    updateHintText();
+                    const dismissed = localStorage.getItem(HINT_KEY) === '1';
+                    hint.classList.toggle('hidden', dismissed);
+                } else {
+                    hint.classList.add('hidden');
+                }
+            }
+
+            // hide hint permanently after first user scroll/drag
+            function dismissHint(){
+                if (localStorage.getItem(HINT_KEY) !== '1'){
+                    localStorage.setItem(HINT_KEY, '1');
+                    hint.classList.add('hidden');
+                }
+            }
+
+            // Sync slider <-> scroll
+            scrollWrap.addEventListener('scroll', () => {
+                updateSliderBounds();
+                updateHintText();
+                if (scrollWrap.scrollLeft > 0) dismissHint();
+            }, {passive:true});
+
+            slider.addEventListener('input', () => {
+                scrollWrap.scrollLeft = Number(slider.value);
+                if (Number(slider.value) > 0) dismissHint();
+            });
+
+            // Recompute on resize and after fonts load
+            let rAF;
+            function onResize(){
+                cancelAnimationFrame(rAF);
+                rAF = requestAnimationFrame(ensureUI);
+            }
+            window.addEventListener('resize', onResize);
+
+            // Initial setup on DOMContentLoaded
+            document.addEventListener('DOMContentLoaded', () => {
+                calculateSum();
+                updateDelivery();
+
+                extraSettings.style.display = toggleExtra.checked ? 'block' : 'none';
+                complexSettings.style.display = toggleComplex.checked ? 'block' : 'none';
+                editSettings.style.display = toggleEdit.checked ? 'block' : 'none';
+                complexEditSettings.style.display = toggleComplexEdit.checked ? 'block' : 'none';
+
+                ensureUI();
+            });
+
+            // Also run ensureUI after a tiny delay to account for font rendering affecting widths
+            setTimeout(ensureUI, 200);
+        })();
+    </script>
 </body>
 </html>
